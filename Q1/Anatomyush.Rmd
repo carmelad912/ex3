@@ -1,0 +1,102 @@
+---
+title: "Q1"
+author: "Dar Nettler & Carmela Davidovsky"
+date: "December 12, 2017"
+output: html_document
+---
+```{r}
+install.packages("igraph")
+library(igraph)
+#You might also need
+install.packages("digest")
+library(digest)
+install.packages("rgl")
+library(rgl)
+
+```
+read the data and turn it into graph
+```{r}
+ga.data <- read.csv('ga_edgelist.csv', header = T)
+g <- graph.data.frame(ga.data,directed = F)
+```
+
+```{r}
+summary(g)
+V(g)$name
+```
+
+plot the graph
+```{r}
+g$layout <- layout.fruchterman.reingold(g)
+plot(g)
+```
+```{r}
+degr.score <- degree(g)
+degr.score
+```
+
+betweeness:
+```{r}
+which.max(betweenness(g, v=V(g), directed = FALSE, weights=NULL, nobigint = FALSE, normalized = FALSE))
+```
+
+closeness:
+```{r}
+which.max(closeness(g, v=V(g), mode = c("out", "in", "all", "total"),
+  weights = NULL, normalized = FALSE))
+```
+
+eigenvector:
+```{r}
+which.max(eigen_centrality(g)$vector)
+```
+
+_________________
+
+##Girvan-Newman community detection
+Generating communities:
+```{r}
+gc <-  edge.betweenness.community(g)
+```
+
+```{r}
+#Store cluster ids for each vertex
+memb <- membership(gc)
+head(memb)
+```
+Plotting the graph and color the vertices by their membership:
+```{r}
+plot(g, vertex.size=5, 
+     vertex.color=memb, asp=FALSE)
+```
+
+Number of communities and their sizes:
+```{r}
+gc
+sizes(gc)
+```
+
+The modularity:
+```{r}
+max(gc$modularity)
+```
+
+##Walktrap
+Generating the communities:
+```{r}
+# Remove self-loops is exist
+g <- simplify(g)
+gc2 <-  fastgreedy.community(g)
+```
+
+```{r}
+plot(g,  vertex.size=5,
+     vertex.color=membership(gc2), asp=FALSE)
+```
+
+Number of communities, their sizes and modularity:
+```{r}
+gc2
+sizes(gc2)
+max(gc2$modularity)
+```

@@ -1,0 +1,157 @@
+---
+title: "twitter"
+author: "Dar Nettler & Carmela Davidovsky"
+date: "December 18, 2017"
+output: html_document
+---
+Install relevant packages
+```{r}
+install.packages("twitteR")
+install.packages("httr")
+install.packages("base64enc")
+install.packages("jsonlite")
+install.packages("wordcloud")
+install.packages("tm")
+install.packages("stringr")
+install.packages("igraph")
+install.packages("digest")
+install.packages("rgl")
+```
+
+Loading relevant packages: 
+```{r}
+library(twitteR)
+library(httr)
+library(jsonlite)
+library(tm)
+library(stringr)
+library(igraph)
+library(digest)
+library(rgl)
+```
+
+```{r}
+source("twitterOAuth.R")
+myapp = oauth_app("twitter", key=consumer_key, secret=consumer_secret)
+sign = sign_oauth1.0(myapp, token=access_token, token_secret=access_secret)
+```
+
+Getting the tweets from twitter and connect between all the hashtags in the same tweet, then write into dataframe and then into file:
+```{r}
+
+res<-searchTwitter("#GreysAnatomy",n=1500, lang = "en")
+#res<-res2
+temp<-list()
+hashtags<-c()
+left<-c()
+right<-c()
+not<-c("#GreysAnatomy")
+#go over each tweet
+for(i in 1:1500){
+  #extract all of the tweet's hashtags
+  w<-res[[i]]$text
+  temp[i]<-str_extract_all(w,"#\\S+")
+  #add the hashtags to a vector, not including "#GreysAnatomy"
+  if(length(temp[[i]])>0){
+    for(j in 1:length(temp[[i]])){
+      if(grepl("greysanatomy",temp[[i]][j])==FALSE && grepl("GreysAnatomy",temp[[i]][j])==FALSE){
+        hashtags<-c(hashtags,temp[[i]][j])
+      }
+      hashtags<-hashtags[!hashtags %in% not]
+    }
+  }
+  
+  #create the egdes of the graph
+  if(length(hashtags)!=0){
+  for(j in 1:length(hashtags))
+    for(k in 1:length(hashtags))
+        if(j<k){
+          left<-c(left,hashtags[j])
+          right<-c(right,hashtags[k])
+        }
+  }
+  #reset vector for next tweet
+  hashtags<-c()
+}
+
+#create data frame
+df<-data.frame(left,right)
+df<-df[!duplicated(df),]
+write.csv(df,file="1500.csv",row.names = FALSE)
+    
+```
+
+creating and displaying the graph
+```{r}
+readddd<-read.csv("1500.csv",header=T)
+graphy<-graph.data.frame(readddd,directed = F)
+length(V(graphy))
+#change the size of each vertex.
+V(graphy)$size<-degree(graphy)
+tkplot(graphy,layout=layout.kamada.kawai)
+
+```
+
+betweeness:
+```{r}
+which.max(betweenness(graphy, v=V(graphy), directed = FALSE, weights=NULL, nobigint = FALSE, normalized = FALSE))
+```
+
+closeness:
+```{r}
+which.max(closeness(graphy, v=V(graphy), mode = c("out", "in", "all", "total"),
+  weights = NULL, normalized = FALSE))
+```
+
+eigenvector:
+```{r}
+which.max(eigen_centrality(graphy)$vector)
+```
+
+_________________
+
+##Girvan-Newman community detection
+Generating the communities:
+```{r}
+gc <-  edge.betweenness.community(graphy)
+```
+
+```{r}
+#Store cluster ids for each vertex
+memb <- membership(gc)
+head(memb)
+```
+
+```{r}
+tkplot(graphy,layout=layout.kamada.kawai, vertex.color=memb, asp=FALSE)
+```
+Number of communities and their sizes:
+```{r}
+gc
+sizes(gc)
+```
+Modularity:
+```{r}
+#modularity for each phase of the previous algorithm
+max(gc$modularity)
+```
+
+## Walktrap:
+Generating the communities:
+```{r}
+# Remove self-loops is exist
+graphy <- simplify(graphy)
+gc2 <-  fastgreedy.community(graphy)
+```
+
+plotting the graph:
+```{r}
+tkplot(graphy,layout=layout.kamada.kawai, vertex.color=membership(gc2),asp=FALSE)
+```
+
+Number of communities, their sizes and modularity:
+```{r}
+gc2
+sizes(gc2)
+max(gc2$modularity)
+```
