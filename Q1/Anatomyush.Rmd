@@ -7,7 +7,6 @@ output: html_document
 ```{r}
 install.packages("igraph")
 library(igraph)
-#You might also need
 install.packages("digest")
 library(digest)
 install.packages("rgl")
