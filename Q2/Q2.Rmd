@@ -34,6 +34,7 @@ library(rgl)
 source("twitterOAuth.R")
 myapp = oauth_app("twitter", key=consumer_key, secret=consumer_secret)
 sign = sign_oauth1.0(myapp, token=access_token, token_secret=access_secret)
+sig <- setup_twitter_oauth(consumer_key, consumer_secret, access_token, access_secret)
 ```
 
 Getting the tweets from twitter and connect between all the hashtags in the same tweet, then write into dataframe and then into file:
